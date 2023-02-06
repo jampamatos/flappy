@@ -1,5 +1,5 @@
 push = require 'push'
-Class = require'class'
+Class = require 'class'
 
 require 'Bird'
 require 'Pipe'
@@ -30,7 +30,7 @@ local GROUND_SCROLL_SPEED = 60
 local BACKGROUND_LOOPING_POINT = 413
 local GROUND_LOOPING_POINT = 514
 
-local scrolling = true      -- flag to pause game
+local isPaused = false -- flag to pause game
 
 function love.load()
   love.graphics.setDefaultFilter('nearest', 'nearest')
@@ -62,11 +62,11 @@ function love.load()
     resizable = true
   })
 
-  gStateMachine = StateMachine{
-    ['title'] = function () return TitleScreenState() end,
-    ['countdown'] = function () return CountDownState() end,
-    ['play'] = function () return PlayState() end,
-    ['score'] = function () return ScoreState() end,
+  gStateMachine = StateMachine {
+    ['title'] = function() return TitleScreenState() end,
+    ['countdown'] = function() return CountDownState() end,
+    ['play'] = function() return PlayState() end,
+    ['score'] = function() return ScoreState() end,
   }
   gStateMachine:change('title')
 
@@ -83,6 +83,14 @@ function love.keypressed(key)
   if key == 'escape' then
     love.event.quit()
   end
+
+  if key == 'p' and gStateMachine.currentStateName == 'play' then
+    if isPaused then
+      isPaused = false
+    else
+      isPaused = true
+    end
+  end
 end
 
 function love.keyboard.wasPressed(key)
@@ -90,12 +98,14 @@ function love.keyboard.wasPressed(key)
 end
 
 function love.update(dt)
-  backgroundScroll = (backgroundScroll + BACKGROUND_SCROLL_SPEED * dt) % BACKGROUND_LOOPING_POINT
-  groundScroll = (groundScroll + GROUND_SCROLL_SPEED * dt) % GROUND_LOOPING_POINT
+  if not isPaused then
+    backgroundScroll = (backgroundScroll + BACKGROUND_SCROLL_SPEED * dt) % BACKGROUND_LOOPING_POINT
+    groundScroll = (groundScroll + GROUND_SCROLL_SPEED * dt) % GROUND_LOOPING_POINT
 
-  gStateMachine:update(dt)
+    gStateMachine:update(dt)
 
-  love.keyboard.keysPressed = {}
+    love.keyboard.keysPressed = {}
+  end
 end
 
 function love.draw()
@@ -103,6 +113,11 @@ function love.draw()
   love.graphics.draw(background, -backgroundScroll, 0)
   gStateMachine:render()
   love.graphics.draw(ground, -groundScroll, VIRTUAL_HEIGHT - 16)
+
+  if isPaused then
+    love.graphics.setFont(hugeFont)
+    love.graphics.printf('PAUSED!', 0, 120, VIRTUAL_WIDTH, 'center')
+  end
 
   push:finish()
 end
